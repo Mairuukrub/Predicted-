@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>โปรแกรมคำนวณค่าคาดคะเนสมรรถภาพปอด</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: "TH Sarabun New", "Sarabun", Tahoma, sans-serif;
+    background: #f4f6f8;
+    margin: 0;
+    padding: 24px;
+    color: #222;
+  }
+  .card {
+    max-width: 640px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 10px;
+    padding: 28px 32px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  }
+  h1 {
+    font-size: 22px;
+    margin-top: 0;
+    color: #1a4d7a;
+  }
+  .ref {
+    font-size: 12px;
+    color: #777;
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+  fieldset {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+  }
+  legend {
+    font-weight: bold;
+    color: #1a4d7a;
+    padding: 0 6px;
+  }
+  label {
+    display: block;
+    margin: 10px 0 4px;
+    font-size: 15px;
+  }
+  input[type=number], select {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 15px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+  }
+  .radio-row {
+    display: flex;
+    gap: 20px;
+    margin: 10px 0;
+  }
+  .radio-row label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-weight: normal;
+  }
+  .radio-row input { width: auto; }
+  .grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  button {
+    background: #1a4d7a;
+    color: #fff;
+    border: none;
+    padding: 12px 20px;
+    font-size: 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 100%;
+  }
+  button:hover { background: #123a5c; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+  th, td {
+    border: 1px solid #ddd;
+    padding: 8px 10px;
+    text-align: center;
+    font-size: 15px;
+  }
+  th {
+    background: #eaf1f8;
+    color: #1a4d7a;
+  }
+  #result { display: none; margin-top: 22px; }
+  .note {
+    font-size: 12px;
+    color: #999;
+    margin-top: 16px;
+    line-height: 1.5;
+  }
+  .pct-normal { color: #1a7a3d; font-weight: bold; }
+  .pct-low { color: #b03030; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>โปรแกรมคำนวณค่าคาดคะเนสมรรถภาพปอด</h1>
+  <div class="ref">
+    ใช้สมการค่าคาดคะเนสำหรับคนไทย (VC, FEV1, FVC, PEF)<br>
+    แหล่งที่มา: Dejsomritrutai W, Nana A, Maranetra N, et al. Reference spirometric values for
+    healthy lifetime nonsmokers in Thailand. J Med Assoc Thai 2000; 83: 457-466.
+  </div>
+
+  <fieldset>
+    <legend>ข้อมูลผู้เข้ารับการทดสอบ</legend>
+
+    <label>เพศ</label>
+    <div class="radio-row">
+      <label><input type="radio" name="gender" value="male" checked> ชาย</label>
+      <label><input type="radio" name="gender" value="female"> หญิง</label>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <label for="age">อายุ (ปี)</label>
+        <input type="number" id="age" step="0.1" placeholder="เช่น 25">
+      </div>
+      <div>
+        <label for="height">ความสูง (เซนติเมตร)</label>
+        <input type="number" id="height" step="0.1" placeholder="เช่น 170">
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>ค่าที่วัดได้จริง (ไม่บังคับ)</legend>
+    <div class="grid2">
+      <div>
+        <label for="m_vc">VC (ลิตร)</label>
+        <input type="number" id="m_vc" step="0.01">
+      </div>
+      <div>
+        <label for="m_fev1">FEV1 (ลิตร)</label>
+        <input type="number" id="m_fev1" step="0.01">
+      </div>
+      <div>
+        <label for="m_fvc">FVC (ลิตร)</label>
+        <input type="number" id="m_fvc" step="0.01">
+      </div>
+      <div>
+        <label for="m_pef">PEF (ลิตร/วินาที)</label>
+        <input type="number" id="m_pef" step="0.01">
+      </div>
+      <div>
+        <label for="m_mvv">MVV (ลิตร/นาที)</label>
+        <input type="number" id="m_mvv" step="0.01">
+      </div>
+    </div>
+  </fieldset>
+
+  <button onclick="calculate()">คำนวณ</button>
+
+  <div id="result">
+    <table>
+      <thead>
+        <tr>
+          <th>ค่า</th>
+          <th>วัดได้</th>
+          <th>ค่าคาดคะเน (Predicted)</th>
+          <th>% ของค่าคาดคะเน</th>
+        </tr>
+      </thead>
+      <tbody id="resultBody"></tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    H = ความสูง (เซนติเมตร), A = อายุ (ปี)<br>
+    ค่าคาดคะเน MVV ใช้สมการสำหรับคนผิวขาว (Caucasian) แล้วปรับเป็นค่าประมาณสำหรับคนเอเชียโดยคูณด้วย 85%
+    (H ในสมการเดิมเป็นหน่วยนิ้ว โปรแกรมแปลงจากความสูงหน่วยเซนติเมตรที่กรอกให้อัตโนมัติ)<br>
+    % ของค่าคาดคะเน ≥ 80% ถือว่าอยู่ในเกณฑ์ปกติโดยทั่วไป (แสดงผลเป็นสีเขียว), ต่ำกว่านั้นแสดงเป็นสีแดง
+    — เป็นเพียงการอ้างอิงคร่าว ๆ ไม่ใช่การวินิจฉัยทางการแพทย์
+  </div>
+</div>
+
+<script>
+function calcPredicted(gender, A, H) {
+  let vc, fev1, fvc, pef, mvv;
+  const H_inch = H / 2.54; // MVV equation uses height in inches
+
+  if (gender === "male") {
+    vc   = -2.601 + 0.122*A - 0.00046*A*A + 0.00023*H*H - 0.00061*A*H;
+    fev1 = -7.697 + 0.123*A + 0.067*H - 0.00034*A*A - 0.0007*A*H;
+    fvc  = vc;
+    pef  = -16.859 + 0.307*A + 0.141*H - 0.0018*A*A - 0.001*A*H;
+    mvv  = 0.85 * (3.39*H_inch - 1.26*A - 21.4);
+  } else {
+    vc   = -5.914 + 0.088*A + 0.056*H - 0.0003*A*A - 0.0005*A*H;
+    fev1 = -10.6 + 0.085*A + 0.12*H - 0.00019*A*A - 0.00022*H*H - 0.00056*A*H;
+    fvc  = vc;
+    pef  = -31.355 + 0.162*A + 0.391*H - 0.00084*A*A - 0.00099*H*H - 0.00072*A*H;
+    mvv  = 0.85 * (-0.77*A + 138);
+  }
+  return { VC: vc, FEV1: fev1, FVC: fvc, PEF: pef, MVV: mvv };
+}
+
+function calculate() {
+  const gender = document.querySelector('input[name="gender"]:checked').value;
+  const age = parseFloat(document.getElementById('age').value);
+  const height = parseFloat(document.getElementById('height').value);
+
+  if (isNaN(age) || isNaN(height)) {
+    alert("กรุณากรอกอายุและความสูงให้ครบถ้วน");
+    return;
+  }
+
+  const predicted = calcPredicted(gender, age, height);
+
+  const measured = {
+    VC: parseFloat(document.getElementById('m_vc').value),
+    FEV1: parseFloat(document.getElementById('m_fev1').value),
+    FVC: parseFloat(document.getElementById('m_fvc').value),
+    PEF: parseFloat(document.getElementById('m_pef').value),
+    MVV: parseFloat(document.getElementById('m_mvv').value),
+  };
+
+  const units = { VC: "ลิตร", FEV1: "ลิตร", FVC: "ลิตร", PEF: "ล./วินาที", MVV: "ล./นาที" };
+
+  let rows = "";
+  for (const key of ["VC", "FEV1", "FVC", "PEF", "MVV"]) {
+    const pred = predicted[key];
+    const meas = measured[key];
+    let measStr = isNaN(meas) ? "-" : meas.toFixed(2);
+    let pctStr = "-";
+    if (!isNaN(meas) && pred !== 0) {
+      const pct = (meas / pred) * 100;
+      const cls = pct >= 80 ? "pct-normal" : "pct-low";
+      pctStr = `<span class="${cls}">${pct.toFixed(1)}%</span>`;
+    }
+    rows += `<tr>
+      <td>${key} (${units[key]})</td>
+      <td>${measStr}</td>
+      <td>${pred.toFixed(3)}</td>
+      <td>${pctStr}</td>
+    </tr>`;
+  }
+
+  document.getElementById('resultBody').innerHTML = rows;
+  document.getElementById('result').style.display = "block";
+}
+</script>
+
+</body>
+</html>
